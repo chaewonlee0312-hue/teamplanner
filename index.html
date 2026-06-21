@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>팀플래너 - 대학생 팀 프로젝트 역할 분배 및 일정 관리</title>
+  
+  <!-- Pretendard Web Font -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  
+  <!-- External CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- 1. 로그인 모달/화면 -->
+  <div id="login-container" class="login-overlay active">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="logo-icon">
+          <i data-lucide="layers"></i>
+        </div>
+        <h1>팀플래너</h1>
+        <p>대학생 팀 프로젝트 성공을 위한 똑똑한 도구</p>
+      </div>
+      <form id="login-form">
+        <div class="input-group">
+          <label for="login-name">이름</label>
+          <input type="text" id="login-name" placeholder="홍길동" required autocomplete="name">
+        </div>
+        <div class="input-group">
+          <label for="login-email">이메일</label>
+          <input type="email" id="login-email" placeholder="example@univ.ac.kr" required autocomplete="email">
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">시작하기</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 메인 애플리케이션 화면 -->
+  <div id="app-container" class="app-wrapper hidden">
+    <!-- Header -->
+    <header class="main-header">
+      <div class="header-logo" id="nav-logo">
+        <i data-lucide="layers"></i>
+        <span>팀플래너</span>
+      </div>
+      
+      <!-- 모바일 햄버거 메뉴 -->
+      <button class="menu-toggle" id="menu-toggle" aria-label="메뉴 열기">
+        <i data-lucide="menu"></i>
+      </button>
+
+      <!-- 네비게이션 메뉴 -->
+      <nav class="nav-menu" id="nav-menu">
+        <button class="nav-item active" data-tab="dashboard">
+          <i data-lucide="layout-dashboard"></i> 대시보드
+        </button>
+        <button class="nav-item" data-tab="team-roles">
+          <i data-lucide="users"></i> 팀 & 역할
+        </button>
+        <button class="nav-item" data-tab="schedule">
+          <i data-lucide="calendar"></i> 일정 조율
+        </button>
+        <button class="nav-item" data-tab="tasks">
+          <i data-lucide="check-square"></i> 할 일 & 진행률
+        </button>
+        <button class="nav-item" data-tab="files">
+          <i data-lucide="folder-open"></i> 자료 공유
+        </button>
+        <button class="nav-item" data-tab="presentation">
+          <i data-lucide="presentation"></i> 발표 & 타이머
+        </button>
+      </nav>
+
+      <div class="user-status">
+        <span id="user-info-text"><strong id="user-name-display">사용자</strong>님</span>
+        <button id="logout-btn" class="btn btn-sm btn-outline">로그아웃</button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      
+      <!-- TAB 1: 대시보드 (Dashboard) -->
+      <section id="tab-dashboard" class="tab-content active">
+        <div class="dashboard-grid">
+          
+          <!-- 카드 1: 팀 요약 -->
+          <div class="card card-summary">
+            <div class="card-header">
+              <h3><i data-lucide="info"></i> 우리 팀 프로젝트</h3>
+            </div>
+            <div class="card-body">
+              <div id="dash-no-team" class="empty-state">
+                <p>등록된 팀 정보가 없습니다. 먼저 팀을 생성해 주세요.</p>
+                <button class="btn btn-primary btn-sm nav-shortcut" data-tab="team-roles">팀 생성하러 가기</button>
+              </div>
+              <div id="dash-team-info" class="hidden">
+                <h4 id="dash-project-title" class="project-title-dash">프로젝트 명</h4>
+                <p class="team-name-dash"><span class="badge badge-primary">팀</span> <span id="dash-team-name">팀 이름</span></p>
+                <div class="member-list-summary">
+                  <h5>참여 팀원</h5>
+                  <div id="dash-members-list" class="members-chips">
+                    <!-- 팀원 칩 동적 추가 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 카드 2: 전체 진행률 -->
+          <div class="card card-progress-dash">
+            <div class="card-header">
+              <h3><i data-lucide="trending-up"></i> 프로젝트 진행률</h3>
+            </div>
+            <div class="card-body progress-body-dash">
+              <div class="radial-progress-container">
+                <div class="progress-bar-linear">
+                  <div class="linear-progress-wrapper">
+                    <div class="progress-bar-fill" id="dash-progress-fill" style="width: 0%;"></div>
+                  </div>
+                  <div class="progress-text-container">
+                    <span class="progress-percent" id="dash-progress-percent">0%</span>
+                    <span class="progress-ratio" id="dash-progress-ratio">(0 / 0 완료됨)</span>
+                  </div>
+                </div>
+              </div>
+              <div class="upcoming-task-summary">
+                <h5>최근 미완료 할 일</h5>
+                <ul id="dash-tasks-list" class="dash-list">
+                  <!-- 할 일 목록 동적 추가 -->
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 카드 3: 일정 & 회의 브리핑 -->
+          <div class="card card-schedule-dash">
+            <div class="card-header">
+              <h3><i data-lucide="calendar-days"></i> 예정된 회의 일정</h3>
+            </div>
+            <div class="card-body">
+              <ul id="dash-meetings-list" class="meeting-timeline">
+                <!-- 예정된 회의 동적 추가 -->
+              </ul>
+              <div class="meeting-cta">
+                <button class="btn btn-outline btn-sm btn-block nav-shortcut" data-tab="schedule">일정 등록 및 회의 추가</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 카드 4: 발표 관리 요약 -->
+          <div class="card card-timer-dash">
+            <div class="card-header">
+              <h3><i data-lucide="presentation"></i> 발표 리허설 타이머</h3>
+            </div>
+            <div class="card-body text-center">
+              <div class="timer-display-mini" id="timer-display-dash">00:00</div>
+              <div class="timer-controls-mini">
+                <button id="timer-start-dash" class="btn btn-sm btn-primary">시작</button>
+                <button id="timer-stop-dash" class="btn btn-sm btn-outline-danger hidden">정지</button>
+                <button id="timer-reset-dash" class="btn btn-sm btn-outline">초기화</button>
+              </div>
+              <div class="timer-desc-dash">
+                <button class="btn btn-link btn-sm nav-shortcut" data-tab="presentation">발표 순서 및 발표 관리 상세 보기</button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 2: 팀 & 역할 (Team & Roles) -->
+      <section id="tab-team-roles" class="tab-content">
+        <div class="section-grid">
+          <!-- 1. 팀 생성 및 프로젝트 설정 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="users-2"></i> 팀 생성 및 정보 입력</h3>
+              <p class="card-subtitle">팀 이름과 조별 과제의 프로젝트 제목을 지정합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="team-info-form" class="spacing-form">
+                <div class="input-group">
+                  <label for="team-name-input">팀 이름</label>
+                  <input type="text" id="team-name-input" placeholder="예: 4조 아자아자" required>
+                </div>
+                <div class="input-group">
+                  <label for="project-title-input">프로젝트 제목</label>
+                  <input type="text" id="project-title-input" placeholder="예: 경영학원론 마케팅 사례 분석" required>
+                </div>
+                <button type="submit" class="btn btn-primary">팀 정보 저장</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2. 팀원 관리 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="user-plus"></i> 팀원 추가</h3>
+              <p class="card-subtitle">함께 프로젝트를 진행하는 팀원들의 이름을 등록하세요.</p>
+            </div>
+            <div class="card-body">
+              <form id="add-member-form" class="inline-form">
+                <div class="input-group">
+                  <input type="text" id="member-name-input" placeholder="팀원 이름 입력" required>
+                </div>
+                <button type="submit" class="btn btn-primary"><i data-lucide="plus"></i> 추가</button>
+              </form>
+
+              <div class="members-list-wrapper">
+                <h4>현재 팀원 목록 (<span id="member-count">0</span>명)</h4>
+                <div id="members-list" class="members-flex">
+                  <!-- 팀원 칩들 -->
+                  <div class="empty-text">등록된 팀원이 없습니다. 팀원을 추가해 주세요.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 역할 분배 -->
+          <div class="card span-2-desktop">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="shield-check"></i> 역할 분배 및 관리</h3>
+              <p class="card-subtitle">팀원별로 담당할 역할을 선택하고 지정할 수 있습니다. 수시로 수정 가능합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="assign-role-form" class="inline-form responsive-flex">
+                <div class="input-group">
+                  <label for="role-member-select">팀원 선택</label>
+                  <select id="role-member-select" required>
+                    <option value="" disabled selected>팀원을 선택하세요</option>
+                  </select>
+                </div>
+                <div class="input-group">
+                  <label for="role-select">역할 배정</label>
+                  <select id="role-select" required>
+                    <option value="" disabled selected>역할을 선택하세요</option>
+                    <option value="발표">발표 (Presentation)</option>
+                    <option value="PPT">PPT 제작 (Design)</option>
+                    <option value="자료조사">자료조사 (Research)</option>
+                    <option value="보고서 작성">보고서 작성 (Writing)</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary mt-end">역할 저장 / 수정</button>
+              </form>
+
+              <div class="role-table-wrapper mt-lg">
+                <h4>역할 현황판</h4>
+                <div class="table-responsive">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>팀원 이름</th>
+                        <th>지정된 역할</th>
+                        <th>역할 태그</th>
+                        <th>관리</th>
+                      </tr>
+                    </thead>
+                    <tbody id="role-table-body">
+                      <!-- 역할 배정 목록 -->
+                      <tr>
+                        <td colspan="4" class="text-center text-muted">등록된 역할 분배 정보가 없습니다.</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 3: 일정 조율 (Schedule Coordination) -->
+      <section id="tab-schedule" class="tab-content">
+        <div class="section-grid">
+          
+          <!-- 1. 가능한 일정 등록 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="calendar-plus"></i> 가능한 날짜 & 시간 등록</h3>
+              <p class="card-subtitle">개인별로 회의 및 모임이 가능한 일정을 입력해 공유합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="schedule-form" class="spacing-form">
+                <div class="input-group">
+                  <label for="schedule-member-select">팀원 이름</label>
+                  <select id="schedule-member-select" required>
+                    <option value="" disabled selected>팀원을 선택하세요</option>
+                  </select>
+                </div>
+                <div class="input-group">
+                  <label for="schedule-date">가능한 날짜</label>
+                  <input type="date" id="schedule-date" required>
+                </div>
+                <div class="input-group">
+                  <label for="schedule-time">가능한 시간</label>
+                  <input type="text" id="schedule-time" placeholder="예: 14:00 - 18:00, 종일 가능" required>
+                </div>
+                <button type="submit" class="btn btn-primary">가능 시간 등록</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2. 가능한 시간대 목록 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="clock"></i> 팀원별 가능 시간 목록</h3>
+              <p class="card-subtitle">제출된 팀원들의 비는 시간을 모아 확인합니다.</p>
+            </div>
+            <div class="card-body">
+              <div class="list-wrapper">
+                <div id="availability-list" class="availability-cards">
+                  <!-- 동적 카드 추가 -->
+                  <div class="empty-text">등록된 가능 일정이 없습니다.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 회의 일정 등록 -->
+          <div class="card span-2-desktop">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="calendar-check"></i> 확정된 회의 일정 등록</h3>
+              <p class="card-subtitle">일정 조율 결과를 기반으로 다 함께 만날 회의를 공지합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="meeting-form" class="inline-form responsive-flex">
+                <div class="input-group">
+                  <label for="meeting-title">회의 안건 / 제목</label>
+                  <input type="text" id="meeting-title" placeholder="예: 1차 아이디어 브레인스토밍" required>
+                </div>
+                <div class="input-group">
+                  <label for="meeting-date">회의 날짜</label>
+                  <input type="date" id="meeting-date" required>
+                </div>
+                <div class="input-group">
+                  <label for="meeting-time">회의 시간</label>
+                  <input type="time" id="meeting-time" required>
+                </div>
+                <button type="submit" class="btn btn-primary mt-end">회의 일정 등록</button>
+              </form>
+
+              <div class="meeting-list-wrapper mt-lg">
+                <h4>등록된 회의 일정 목록</h4>
+                <div class="meeting-grid" id="meetings-list">
+                  <!-- 회의 목록 동적 생성 -->
+                  <div class="empty-text">확정된 회의 일정이 없습니다. 회의를 등록해 주세요.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 4: 할 일 & 진행률 관리 (Tasks & Progress) -->
+      <section id="tab-tasks" class="tab-content">
+        <div class="section-grid">
+          
+          <!-- 1. 할 일 등록 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="check-circle-2"></i> 할 일(태스크) 추가</h3>
+              <p class="card-subtitle">프로젝트를 위해 수행해야 할 개별 할 일을 추가합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="task-form" class="spacing-form">
+                <div class="input-group">
+                  <label for="task-title">할 일 설명</label>
+                  <input type="text" id="task-title" placeholder="예: PPT 템플릿 디자인 제작" required>
+                </div>
+                <div class="input-group">
+                  <label for="task-assignee">담당 팀원</label>
+                  <select id="task-assignee" required>
+                    <option value="" disabled selected>담당자를 선택하세요</option>
+                  </select>
+                </div>
+                <button type="submit" class="btn btn-primary">할 일 등록</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2. 진행률 현황판 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="activity"></i> 실시간 프로젝트 진행률</h3>
+              <p class="card-subtitle">완료된 일들을 바탕으로 현재 진행 상황이 실시간 자동 반영됩니다.</p>
+            </div>
+            <div class="card-body flex-column-center">
+              <div class="progress-display-large">
+                <span class="pct-num" id="progress-percentage-large">0%</span>
+                <span class="pct-label">완료율</span>
+              </div>
+              <div class="linear-progress-wrapper-lg">
+                <div class="progress-bar-fill-lg" id="progress-fill-large" style="width: 0%;"></div>
+              </div>
+              <p class="progress-stats-text" id="progress-stats-text">총 0개 중 0개 완료됨</p>
+            </div>
+          </div>
+
+          <!-- 3. 할 일 목록 리스트 -->
+          <div class="card span-2-desktop">
+            <div class="card-header border-bottom flex-space-between">
+              <div>
+                <h3><i data-lucide="list-todo"></i> 팀 할 일 목록</h3>
+                <p class="card-subtitle">각 담당자의 완료 유무를 체크하고 편집할 수 있습니다.</p>
+              </div>
+              <!-- 필터 칩스 -->
+              <div class="filter-buttons">
+                <button class="btn btn-xs btn-primary filter-btn" data-filter="all">전체</button>
+                <button class="btn btn-xs btn-outline filter-btn" data-filter="active">진행중</button>
+                <button class="btn btn-xs btn-outline filter-btn" data-filter="completed">완료</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="todo-list-container">
+                <ul id="todo-items-list" class="todo-list">
+                  <!-- 할 일 리스트 동적 삽입 -->
+                  <li class="empty-state-item">
+                    <p class="text-muted">아직 등록된 할 일이 없습니다. 위의 폼에서 할 일을 추가해 보세요!</p>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 5: 자료 공유 (File Sharing) -->
+      <section id="tab-files" class="tab-content">
+        <div class="section-grid">
+          
+          <!-- 1. 자료 등록 폼 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="link-2"></i> 파일 및 공유 링크 등록</h3>
+              <p class="card-subtitle">자료조사 파일, 노션, Google Drive, PPT 링크 등을 팀원들과 공유합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="file-share-form" class="spacing-form">
+                <div class="input-group">
+                  <label for="file-name">자료 이름</label>
+                  <input type="text" id="file-name" placeholder="예: 1차 설문조사 결과 데이터 (엑셀)" required>
+                </div>
+                <div class="input-group">
+                  <label for="file-link">공유 링크 (URL)</label>
+                  <input type="url" id="file-link" placeholder="https://docs.google.com/..." required>
+                </div>
+                <button type="submit" class="btn btn-primary">자료 공유 링크 등록</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2. 공유된 자료 목록 리스트 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="files"></i> 공유 자료 목록</h3>
+              <p class="card-subtitle">아이콘을 클릭하면 외부 공유 링크로 안전하게 이동합니다.</p>
+            </div>
+            <div class="card-body">
+              <div class="files-list-wrapper">
+                <ul id="shared-files-list" class="files-list">
+                  <!-- 동적 파일 리스트 -->
+                  <div class="empty-text">등록된 공유 자료가 없습니다.</div>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB 6: 발표 관리 & 타이머 (Presentation & Timer) -->
+      <section id="tab-presentation" class="tab-content">
+        <div class="section-grid">
+          
+          <!-- 1. 발표 순서 및 파트 입력 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="list-ordered"></i> 발표 순서 및 파트 설정</h3>
+              <p class="card-subtitle">최종 발표의 순서와 각자 맡은 발표 세부 파트를 지정합니다.</p>
+            </div>
+            <div class="card-body">
+              <form id="presentation-form" class="spacing-form">
+                <div class="input-group">
+                  <label for="pres-member-select">발표자</label>
+                  <select id="pres-member-select" required>
+                    <option value="" disabled selected>팀원을 선택하세요</option>
+                  </select>
+                </div>
+                <div class="input-group">
+                  <label for="pres-part">발표 파트</label>
+                  <input type="text" id="pres-part" placeholder="예: 서론 및 기업 소개, 질의응답" required>
+                </div>
+                <div class="input-group">
+                  <label for="pres-order">발표 순서 (숫자)</label>
+                  <input type="number" id="pres-order" min="1" placeholder="예: 1" required>
+                </div>
+                <button type="submit" class="btn btn-primary">발표 설정 저장</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- 2. 발표 타이머 도구 -->
+          <div class="card">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="stopwatch"></i> 발표 리허설 타이머</h3>
+              <p class="card-subtitle">발표 분량을 조절하고 시간 제한을 준수할 수 있도록 도와주는 정밀 스톱워치입니다.</p>
+            </div>
+            <div class="card-body flex-column-center">
+              <div class="timer-display" id="timer-display-main">00:00.00</div>
+              
+              <div class="timer-controls">
+                <button id="timer-start-main" class="btn btn-lg btn-success"><i data-lucide="play"></i> 시작</button>
+                <button id="timer-stop-main" class="btn btn-lg btn-danger hidden"><i data-lucide="square"></i> 정지</button>
+                <button id="timer-reset-main" class="btn btn-lg btn-outline"><i data-lucide="rotate-ccw"></i> 초기화</button>
+              </div>
+
+              <div class="timer-guide mt-md">
+                <p class="text-muted"><i data-lucide="info" class="inline-icon"></i> 1/100초 단위까지 정밀 측정되며 실전처럼 시간을 재어 보기에 좋습니다.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 발표 구성 타임라인 현황판 -->
+          <div class="card span-2-desktop">
+            <div class="card-header border-bottom">
+              <h3><i data-lucide="git-commit"></i> 발표 순서 흐름도 (Timeline)</h3>
+              <p class="card-subtitle">배정된 발표자들의 순서와 담당 파트가 타임라인 형태로 시각화됩니다.</p>
+            </div>
+            <div class="card-body">
+              <div class="presentation-timeline" id="presentation-timeline-list">
+                <!-- 타임라인 아이템 동적 생성 -->
+                <div class="empty-text">설정된 발표 순서가 없습니다. 발표 설정을 추가해 주세요.</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+      <p>&copy; 2026 팀플래너(Team Planner). All rights reserved.</p>
+      <p class="footer-desc">조별 프로젝트의 모든 것 - 역할 배정, 일정, 할 일, 파일 공유, 리허설까지 하나의 대시보드에서 관리하세요.</p>
+    </footer>
+  </div>
+
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Main JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
